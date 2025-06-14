@@ -1,7 +1,18 @@
 import 'package:fitness_tracker_app/model/goal.dart';
+import 'package:fitness_tracker_app/model/workout.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../helpers/database_helper.dart';
+
+// Move _GoalDayProgress to top-level
+class _GoalDayProgress {
+  final String title;
+  final int doneToday;
+  final int expectedToday;
+  final Color color;
+  _GoalDayProgress(this.title, this.doneToday, this.expectedToday, this.color);
+}
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -14,10 +25,14 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen> {
   _ProgressScreenState();
 
-  int _totalWorkouts = 0;
   int _totalGoals = 0;
-  int _completedGoals = 0;
-  int _totalCalories = 0;
+
+  // Selected date and week dates for the selector
+  DateTime _selectedDate = DateTime.now();
+  List<DateTime> _weekDates = [];
+
+  // Blinking animation for the selected day
+  bool _isBlinking = false;
 
   // Modern color palette
   final Color primaryColor = Color(0xFF6C63FF); // purple
@@ -28,7 +43,56 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   void initState() {
     super.initState();
+    _setWeekDates(_selectedDate);
     _loadStats();
+    _loadFilteredStats();
+  }
+
+  void _setWeekDates(DateTime date) {
+    final monday = date.subtract(Duration(days: date.weekday - 1));
+    _weekDates = List.generate(7, (i) => monday.add(Duration(days: i)));
+  }
+
+  Future<void> _loadFilteredStats() async {
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final workouts = await DatabaseHelper.instance.getWorkoutsByDate(dateStr);
+    final goals = await DatabaseHelper.instance.getAllGoals();
+    List<_GoalDayProgress> progressList = [];
+    final colors = [accentColor, orangeColor, Colors.purple, Colors.blue, Colors.green, Colors.red, Colors.teal, Colors.amber];
+    if (goals.isNotEmpty) {
+      for (int i = 0; i < goals.length; i++) {
+        final goal = goals[i];
+        final totalDays = goal.endDate.difference(goal.startDate).inDays + 1;
+        final expectedPerDay = (goal.totalMinutes / totalDays).ceil();
+        final goalWorkouts = workouts.where((w) => w.goalId == goal.id).toList();
+        final doneToday = goalWorkouts.fold<int>(0, (sum, w) => sum + w.minutes);
+        progressList.add(_GoalDayProgress(goal.title, doneToday, expectedPerDay, colors[i % colors.length]));
+      }
+    }
+    setState(() {
+      // _filteredCalories = calories; // No longer used
+      // _filteredMinutes = minutes; // No longer used
+    });
+  }
+
+  void _onDaySelected(DateTime date) async {
+    setState(() {
+      _selectedDate = date;
+      _isBlinking = true;
+    });
+    _setWeekDates(date);
+    await _loadFilteredStats();
+    _startBlinking();
+  }
+
+  void _startBlinking() async {
+    for (int i = 0; i < 3; i++) {
+      setState(() { _isBlinking = true; });
+      await Future.delayed(Duration(milliseconds: 200));
+      setState(() { _isBlinking = false; });
+      await Future.delayed(Duration(milliseconds: 200));
+    }
+    setState(() { _isBlinking = false; });
   }
 
   @override
@@ -38,168 +102,140 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Future<void> _loadStats() async {
-    final totalWorkouts = await DatabaseHelper.instance.getTotalWorkouts();
     final totalGoals = await DatabaseHelper.instance.getTotalGoals();
-    final completedGoals = await DatabaseHelper.instance.getCompletedGoals();
-    final totalCalories = await DatabaseHelper.instance.getTotalCaloriesBurned();
     setState(() {
-      _totalWorkouts = totalWorkouts;
       _totalGoals = totalGoals;
-      _completedGoals = completedGoals;
-      _totalCalories = totalCalories;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: grayColor,
-      appBar: AppBar(
-        title: Text('Progress Overview', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: IconThemeData(color: accentColor),
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
+  Widget _buildWeekSelector() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _weekDates.map((date) {
+        final isSelected = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(_selectedDate);
+        return GestureDetector(
+          onTap: () => _onDaySelected(date),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(
+              color: isSelected && _isBlinking ? Colors.white : (isSelected ? accentColor : Colors.white),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isSelected ? accentColor : grayColor, width: 2),
+              boxShadow: isSelected ? [BoxShadow(color: accentColor.withOpacity(0.2), blurRadius: 8)] : [],
+            ),
+            child: Column(
               children: [
-                _buildStatCard('Total Workouts', _totalWorkouts.toString(), Icons.fitness_center, accentColor),
-                _buildStatCard('Total Goals', _totalGoals.toString(), Icons.flag, primaryColor),
-                _buildStatCard('Goals Achieved', _completedGoals.toString(), Icons.check_circle, orangeColor),
-                _buildStatCard('Calories Burned', _totalCalories.toString(), Icons.local_fire_department, Colors.redAccent),
+                Text(DateFormat('E').format(date), style: TextStyle(
+                  color: isSelected ? primaryColor : Colors.black54,
+                  fontWeight: FontWeight.bold,
+                )),
+                SizedBox(height: 4),
+                Text(date.day.toString(), style: TextStyle(
+                  color: isSelected ? primaryColor : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                )),
               ],
             ),
-            SizedBox(height: 24),
-            Text(
-              'Workout Summary',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            SizedBox(height: 16),
-            SizedBox(
-              height: 300,
-              child: _buildWorkoutChart(),
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Goals Progress',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: _buildGoalsChart(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color iconColor) {
-    return Container(
-      width: (MediaQuery.of(context).size.width - 72) / 2, // 2 cards per row with padding
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: iconColor),
-              SizedBox(height: 16),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: iconColor,
-                ),
-              ),
-            ],
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildWorkoutChart() {
-    // This is a placeholder - you would fetch actual workout data
-    // and format it for the chart in a real app
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return FutureBuilder<List<Workout>>(
+      future: DatabaseHelper.instance.getWorkoutsByDateRange(
+        DateFormat('yyyy-MM-dd').format(_weekDates.first),
+        DateFormat('yyyy-MM-dd').format(_weekDates.last),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceAround,
-            maxY: 20,
-            barTouchData: BarTouchData(enabled: false),
-            titlesData: FlTitlesData(
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              topTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
-                  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(days[value.toInt() % 7], style: TextStyle(color: accentColor)),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(child: CircularProgressIndicator());
+        }
+        final workouts = snapshot.data!;
+        final Map<String, int> dayTotals = { for (var d in _weekDates) DateFormat('yyyy-MM-dd').format(d): 0 };
+        for (var w in workouts) {
+          final wDate = w.dateString;
+          if (dayTotals.containsKey(wDate)) {
+            dayTotals[wDate] = (dayTotals[wDate] ?? 0) + w.minutes;
+          }
+        }
+        // Find min/max for coloring
+        final values = dayTotals.values.toList();
+        final maxVal = values.isNotEmpty ? values.reduce((a, b) => a > b ? a : b) : 0;
+        final minVal = values.isNotEmpty ? values.reduce((a, b) => a < b ? a : b) : 0;
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: ((maxVal + 10) / 60).ceil() * 60.0, // round up to next hour
+                barTouchData: BarTouchData(enabled: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value % 60 == 0) {
+                          return Text('${(value ~/ 60)}h', style: TextStyle(color: Colors.black54));
+                        }
+                        return SizedBox();
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
+                      final idx = value.toInt();
+                      if (idx < 0 || idx >= _weekDates.length) return SizedBox();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(DateFormat('E').format(_weekDates[idx]), style: TextStyle(color: accentColor)),
+                      );
+                    }),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: List.generate(_weekDates.length, (index) {
+                  final dateStr = DateFormat('yyyy-MM-dd').format(_weekDates[index]);
+                  final val = dayTotals[dateStr] ?? 0;
+                  Color barColor;
+                  if (val == maxVal && val > 0) {
+                    barColor = Colors.green;
+                  } else if (val == minVal && val > 0) {
+                    barColor = Colors.red;
+                  } else if (val > 0) {
+                    barColor = Colors.orange;
+                  } else {
+                    barColor = grayColor;
+                  }
+                  final isSelected = dateStr == DateFormat('yyyy-MM-dd').format(_selectedDate);
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: val.toDouble(),
+                        color: isSelected && _isBlinking ? Colors.purpleAccent : barColor,
+                        width: 18,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ],
                   );
                 }),
               ),
             ),
-            borderData: FlBorderData(show: false),
-            barGroups: List.generate(7, (index) {
-              return BarChartGroupData(
-                x: index,
-                barRods: [
-                  BarChartRodData(
-                    toY: (index + 1) * 2.0,
-                    color: accentColor,
-                    width: 18,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ],
-              );
-            }),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -305,13 +341,54 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  Widget _buildLegendDot(Color color) {
-    return Container(
-      width: 12,
-      height: 12,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: grayColor,
+      appBar: AppBar(
+        title: Text('Progress Overview', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: accentColor),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildWeekSelector(),
+            SizedBox(height: 16),
+            // Workout summary chart at the top
+            Text(
+              'Workout Summary (Week)',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+            SizedBox(height: 16),
+            SizedBox(
+              height: 300,
+              child: _buildWorkoutChart(),
+            ),
+            SizedBox(height: 24),
+            // Goals progress at the bottom
+            Text(
+              'Goals Progress',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+            SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: _buildGoalsChart(),
+            ),
+          ],
+        ),
       ),
     );
   }

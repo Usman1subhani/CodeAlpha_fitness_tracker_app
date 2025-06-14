@@ -43,6 +43,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     setState(() => _isLoading = true);
     _goals = await DatabaseHelper.instance.getAllGoals();
     _workouts = await DatabaseHelper.instance.getAllWorkouts();
+    // Sort workouts by date descending, then by id descending (latest first)
+    _workouts.sort((a, b) {
+      int dateCompare = b.date.compareTo(a.date);
+      if (dateCompare != 0) return dateCompare;
+      return (b.id ?? 0).compareTo(a.id ?? 0);
+    });
     setState(() => _isLoading = false);
   }
 
@@ -308,109 +314,121 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     ? Center(child: CircularProgressIndicator())
                     : _workouts.isEmpty
                         ? Center(child: Text('No workouts recorded yet', style: TextStyle(color: Colors.grey)))
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: _workouts.length,
-                            itemBuilder: (context, index) {
-                              final workout = _workouts[index];
-                              final goal = _goals.firstWhere(
-                                (g) => g.id == workout.goalId,
-                                orElse: () => Goal(
-                                  title: 'Unknown Goal',
-                                  totalMinutes: 0,
-                                  startDate: DateTime.now(),
-                                  endDate: DateTime.now(),
-                                ),
-                              );
-                              return Card(
-                                color: Colors.white,
-                                elevation: 3,
-                                margin: EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    // ignore: deprecated_member_use
-                                    backgroundColor: accentColor.withOpacity(0.15),
-                                    child: Icon(Icons.directions_run, color: accentColor),
+                        : Scrollbar(
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: AlwaysScrollableScrollPhysics(),
+                              itemCount: _workouts.length,
+                              itemBuilder: (context, index) {
+                                final workout = _workouts[index];
+                                final goal = _goals.firstWhere(
+                                  (g) => g.id == workout.goalId,
+                                  orElse: () => Goal(
+                                    title: 'Unknown Goal',
+                                    totalMinutes: 0,
+                                    startDate: DateTime.now(),
+                                    endDate: DateTime.now(),
                                   ),
-                                  title: Text(
-                                    workout.formattedDate,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(goal.title, style: TextStyle(color: Colors.black87)),
-                                      SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.timer, size: 16, color: accentColor),
-                                          SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              '${workout.minutes} min',
-                                              style: TextStyle(color: Colors.black54),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                                );
+                                // Group by date: show a date header if this is the first workout for that date
+                                bool showDateHeader = index == 0 || workout.dateString != _workouts[index - 1].dateString;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (showDateHeader)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8, top: 8, bottom: 2),
+                                        child: Text(
+                                          workout.formattedDate,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: primaryColor,
+                                            fontSize: 16,
                                           ),
-                                          SizedBox(width: 8),
-                                          Icon(Icons.local_fire_department, size: 16, color: orangeColor),
-                                          SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              '${workout.calories} cal',
-                                              style: TextStyle(color: Colors.black54),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                      if (workout.notes != null && workout.notes!.isNotEmpty) ...[
-                                        SizedBox(height: 4),
-                                        Row(
+                                    Card(
+                                      color: Colors.white,
+                                      elevation: 3,
+                                      margin: EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: ListTile(
+                                        leading: CircleAvatar(
+                                          backgroundColor: accentColor.withOpacity(0.15),
+                                          child: Icon(Icons.directions_run, color: accentColor),
+                                        ),
+                                        title: Text(goal.title, style: TextStyle(color: Colors.black87)),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Icon(Icons.notes, size: 16, color: Colors.grey),
-                                            SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                workout.notes!,
-                                                style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black45),
-                                                overflow: TextOverflow.ellipsis,
+                                            Row(
+                                              children: [
+                                                Icon(Icons.timer, size: 16, color: accentColor),
+                                                SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    '${workout.minutes} min',
+                                                    style: TextStyle(color: Colors.black54),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 8),
+                                                Icon(Icons.local_fire_department, size: 16, color: orangeColor),
+                                                SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    '${workout.calories} cal',
+                                                    style: TextStyle(color: Colors.black54),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (workout.notes != null && workout.notes!.isNotEmpty) ...[
+                                              SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.notes, size: 16, color: Colors.grey),
+                                                  SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      workout.notes!,
+                                                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black45),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(Icons.edit, color: orangeColor),
+                                              tooltip: 'Edit',
+                                              onPressed: () => _startEditWorkout(workout),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.delete, color: Colors.redAccent),
+                                              tooltip: 'Delete',
+                                              onPressed: () => _deleteWorkout(
+                                                workout.id!,
+                                                workout.minutes,
+                                                workout.goalId,
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ],
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.edit, color: orangeColor),
-                                        tooltip: 'Edit',
-                                        onPressed: () => _startEditWorkout(workout),
                                       ),
-                                      IconButton(
-                                        icon: Icon(Icons.delete, color: Colors.redAccent),
-                                        tooltip: 'Delete',
-                                        onPressed: () => _deleteWorkout(
-                                          workout.id!,
-                                          workout.minutes,
-                                          workout.goalId,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
               ),
             ],

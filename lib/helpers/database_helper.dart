@@ -160,6 +160,42 @@ class DatabaseHelper {
     );
   }
 
+  // Fetch workouts for a specific date (YYYY-MM-DD)
+  Future<List<Workout>> getWorkoutsByDate(String date) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'workouts',
+      where: 'date = ?',
+      whereArgs: [date],
+    );
+    return result.map((json) => Workout.fromMap(json)).toList();
+  }
+
+  // Fetch workouts for a date range (inclusive, YYYY-MM-DD)
+  Future<List<Workout>> getWorkoutsByDateRange(String startDate, String endDate) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'workouts',
+      where: 'date >= ? AND date <= ?',
+      whereArgs: [startDate, endDate],
+    );
+    return result.map((json) => Workout.fromMap(json)).toList();
+  }
+
+  // Get total workouts for a specific date
+  Future<int> getTotalWorkoutsByDate(String date) async {
+    final db = await instance.database;
+    final result = await db.rawQuery('SELECT COUNT(*) FROM workouts WHERE date = ?', [date]);
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  // Get total calories burned for a specific date
+  Future<int> getTotalCaloriesByDate(String date) async {
+    final db = await instance.database;
+    final result = await db.rawQuery('SELECT SUM(calories) FROM workouts WHERE date = ?', [date]);
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
   // Progress statistics
   Future<int> getTotalWorkouts() async {
     final db = await instance.database;

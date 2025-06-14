@@ -21,6 +21,9 @@ class Workout {
     return DateFormat('MMM d, y').format(date);
   }
 
+  // Helper to get date as yyyy-MM-dd string for DB comparison
+  String get dateString => DateFormat('yyyy-MM-dd').format(date);
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
