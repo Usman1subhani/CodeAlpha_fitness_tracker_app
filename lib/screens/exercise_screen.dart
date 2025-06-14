@@ -20,6 +20,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   // Edit mode state
   bool _isEditMode = false;
   int? _editingExerciseId;
+  // Track which card is expanded
+  int? _expandedIndex;
 
   // Modern color palette
   final Color primaryColor = Color(0xFF6C63FF); // purple
@@ -210,62 +212,89 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                             itemCount: _exercises.length,
                             itemBuilder: (context, index) {
                               final exercise = _exercises[index];
-                              return Card(
-                                color: Colors.white,
-                                elevation: 3,
-                                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: accentColor.withOpacity(0.15),
-                                    child: Icon(Icons.fitness_center, color: accentColor),
+                              final isExpanded = _expandedIndex == index;
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _expandedIndex = isExpanded ? null : index;
+                                  });
+                                },
+                                child: Card(
+                                  color: Colors.white,
+                                  elevation: 3,
+                                  margin: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  title: Text(
-                                    exercise.name,
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.category, size: 16, color: orangeColor),
-                                          SizedBox(width: 4),
-                                          Text('Type: ${exercise.type}', style: TextStyle(color: Colors.black54)),
-                                        ],
-                                      ),
-                                      SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.description, size: 16, color: Colors.grey),
-                                          SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              exercise.description,
-                                              style: TextStyle(color: Colors.black45),
-                                              overflow: TextOverflow.ellipsis,
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: accentColor.withOpacity(0.15),
+                                      child: Icon(Icons.fitness_center, color: accentColor),
+                                    ),
+                                    title: Text(
+                                      exercise.name,
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(Icons.category, size: 16, color: orangeColor),
+                                            SizedBox(width: 4),
+                                            Text('Type: ${exercise.type}', style: TextStyle(color: Colors.black54)),
+                                          ],
+                                        ),
+                                        SizedBox(height: 4),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(Icons.description, size: 16, color: Colors.grey),
+                                            SizedBox(width: 4),
+                                            Expanded(
+                                              child: AnimatedCrossFade(
+                                                firstChild: Text(
+                                                  exercise.description.length > 40 && !isExpanded
+                                                      ? exercise.description.substring(0, 40) + '...'
+                                                      : exercise.description,
+                                                  style: TextStyle(color: Colors.black45),
+                                                  maxLines: isExpanded ? null : 1,
+                                                  overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                                ),
+                                                secondChild: Text(
+                                                  exercise.description,
+                                                  style: TextStyle(color: Colors.black45),
+                                                ),
+                                                crossFadeState: isExpanded
+                                                    ? CrossFadeState.showSecond
+                                                    : CrossFadeState.showFirst,
+                                                duration: Duration(milliseconds: 200),
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.edit, color: orangeColor),
-                                        tooltip: 'Edit',
-                                        onPressed: () => _startEditExercise(exercise),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.delete, color: Colors.redAccent),
-                                        tooltip: 'Delete',
-                                        onPressed: () => _deleteExercise(exercise.id!),
-                                      ),
-                                    ],
+                                            if (exercise.description.length > 40)
+                                              Icon(
+                                                isExpanded ? Icons.expand_less : Icons.expand_more,
+                                                color: accentColor,
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.edit, color: orangeColor),
+                                          tooltip: 'Edit',
+                                          onPressed: () => _startEditExercise(exercise),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.delete, color: Colors.redAccent),
+                                          tooltip: 'Delete',
+                                          onPressed: () => _deleteExercise(exercise.id!),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );

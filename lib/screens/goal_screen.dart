@@ -287,83 +287,81 @@ class _GoalScreenState extends State<GoalScreen> {
                 ),
               ),
               SizedBox(height: 24),
-              Container(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _goals.isEmpty
-                        ? Center(child: Text('No goals added yet', style: TextStyle(color: Colors.grey)))
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: _goals.length,
-                            itemBuilder: (context, index) {
-                              final goal = _goals[index];
-                              return Card(
-                                color: Colors.white,
-                                elevation: 3,
-                                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            goal.title,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                              color: primaryColor,
+              // Remove Expanded, just use ListView.builder with shrinkWrap
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _goals.isEmpty
+                      ? Center(child: Text('No goals added yet', style: TextStyle(color: Colors.grey)))
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: _goals.length,
+                          itemBuilder: (context, index) {
+                            final goal = _goals[index];
+                            return Card(
+                              color: Colors.white,
+                              elevation: 3,
+                              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          goal.title,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            color: primaryColor,
+                                          ),
+                                        ),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(Icons.edit, color: orangeColor),
+                                              tooltip: 'Edit',
+                                              onPressed: () => _startEditGoal(goal),
                                             ),
-                                          ),
-                                          Row(
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(Icons.edit, color: orangeColor),
-                                                tooltip: 'Edit',
-                                                onPressed: () => _startEditGoal(goal),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(Icons.delete, color: Colors.redAccent),
-                                                tooltip: 'Delete',
-                                                onPressed: () => _deleteGoal(goal.id!),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.date_range, size: 16, color: accentColor),
-                                          SizedBox(width: 4),
-                                          Text(goal.formattedDateRange, style: TextStyle(color: Colors.black54)),
-                                        ],
-                                      ),
-                                      SizedBox(height: 12),
-                                      LinearProgressIndicator(
-                                        value: goal.progressPercentage,
-                                        backgroundColor: Colors.grey[200],
-                                        color: accentColor,
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        '${goal.completedMinutes} / ${goal.totalMinutes} min completed',
-                                        style: TextStyle(color: Colors.black45),
-                                      ),
-                                    ],
-                                  ),
+                                            IconButton(
+                                              icon: Icon(Icons.delete, color: Colors.redAccent),
+                                              tooltip: 'Delete',
+                                              onPressed: () => _deleteGoal(goal.id!),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.date_range, size: 16, color: accentColor),
+                                        SizedBox(width: 4),
+                                        Text(goal.formattedDateRange, style: TextStyle(color: Colors.black54)),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    LinearProgressIndicator(
+                                      value: goal.progressPercentage,
+                                      backgroundColor: Colors.grey[200],
+                                      color: accentColor,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      '${goal.completedMinutes} / ${goal.totalMinutes} min completed',
+                                      style: TextStyle(color: Colors.black45),
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
-                          ),
-              ),
+                              ),
+                            );
+                          },
+                        ),
             ],
           ),
         ),
