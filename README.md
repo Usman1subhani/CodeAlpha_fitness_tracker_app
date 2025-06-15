@@ -1,22 +1,31 @@
 # Fitness Tracker App
 
-A modern, cross-platform fitness tracker built with Flutter. Track your workouts, set goals, monitor progress, and manage exercises—all with a beautiful, responsive UI.
+A modern, cross-platform fitness tracker built with Flutter.  
+Track your workouts, set and monitor goals, and visualize your progress with a beautiful, responsive UI.
 
-## Features
+---
 
-- **Workout Tracking:** Log workouts with minutes, calories, notes, and dates.
-- **Goal Management:** Create, edit, and delete fitness goals with progress tracking.
-- **Exercise Library:** Add, edit, and manage custom exercises.
-- **Progress Visualization:** View your stats and goal progress with interactive charts and modern UI.
-- **Modern Design:** Fresh color palette, icons, and responsive layouts for a great user experience.
-- **Edit Functionality:** Easily update any workout, goal, or exercise.
-- **Persistent Storage:** All data is stored locally using SQLite.
+## 🚀 Features
 
-## Screenshots
+- **Workout Logging:** Add, edit, and view workouts with minutes, calories, notes, and dates.
+- **Goal Management:** Create, edit, and track fitness goals with real-time progress.
+- **Progress Visualization:** Interactive weekly charts and concentric goal rings for clear insights.
+- **Exercise Library:** Manage your own list of exercises.
+- **Modern UI:** Fresh color palette, icons, and smooth scrolling for a great user experience.
+- **Date-based Stats:** All stats and charts update live based on the selected date.
+- **Persistent Storage:** All data is stored locally using SQLite for privacy and offline access.
 
-*(Add your screenshots here)*
+---
 
-## Folder Structure
+## 📱 Screenshots
+
+![Untitled design](https://github.com/user-attachments/assets/5f691282-7435-4f7a-9fdf-66d6ff84cab8)
+
+ 
+
+---
+
+## 📁 Project Structure
 
 ```
 lib/
@@ -40,7 +49,9 @@ lib/
     └── bottom_nav_bar.dart    # Custom bottom navigation bar
 ```
 
-## Getting Started
+---
+
+## 🛠️ Getting Started
 
 ### Prerequisites
 
@@ -52,8 +63,8 @@ lib/
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/your-username/fitness_tracker_app.git
-   cd fitness_tracker_app
+   git clone https://github.com/Usman1subhani/CodeAlpha_fitness_tracker_app.git
+   cd CodeAlpha_fitness_tracker_app
    ```
 
 2. **Install dependencies:**
@@ -66,25 +77,11 @@ lib/
    flutter run
    ```
 
-## Usage
+---
+
+## 🧭 Usage
 
 - **Navigation:** Use the bottom navigation bar to switch between Workouts, Goals, Exercises, and Progress.
 - **Add/Edit/Delete:** Tap the "+" or edit icons to add or update entries. Long-press or use the delete icon to remove items.
 - **Charts:** View your progress and stats on the Progress screen, with interactive and colorful charts.
-
-## Customization
-
-- **Colors & Theme:** Easily update the color palette in each screen’s state class.
-- **Database:** Uses SQLite via the `sqflite` package for local storage.
-
-## Contributing
-
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
-
-## License
-
-[MIT](LICENSE)
-
----
-
-**Made with Flutter ❤️**
+- **Date Selection:** Tap on any day in the progress screen
