@@ -109,39 +109,46 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _buildWeekSelector() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: _weekDates.map((date) {
-        final isSelected = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(_selectedDate);
-        return GestureDetector(
-          onTap: () => _onDaySelected(date),
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            decoration: BoxDecoration(
-              color: isSelected && _isBlinking ? Colors.white : (isSelected ? accentColor : Colors.white),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isSelected ? accentColor : grayColor, width: 2),
-              boxShadow: isSelected ? [BoxShadow(color: accentColor.withOpacity(0.2), blurRadius: 8)] : [],
-            ),
-            child: Column(
-              children: [
-                Text(DateFormat('E').format(date), style: TextStyle(
-                  color: isSelected ? primaryColor : Colors.black54,
-                  fontWeight: FontWeight.bold,
-                )),
-                SizedBox(height: 4),
-                Text(date.day.toString(), style: TextStyle(
-                  color: isSelected ? primaryColor : Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                )),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+    return SizedBox(
+      height: 60,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _weekDates.map((date) {
+            final isSelected = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(_selectedDate);
+            return GestureDetector(
+              onTap: () => _onDaySelected(date),
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(vertical: 4, horizontal: 12), // reduce vertical padding
+                decoration: BoxDecoration(
+                  color: isSelected && _isBlinking ? Colors.white : (isSelected ? accentColor : Colors.white),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isSelected ? accentColor : grayColor, width: 2),
+                  boxShadow: isSelected ? [BoxShadow(color: accentColor.withOpacity(0.2), blurRadius: 8)] : [],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // prevent overflow
+                  children: [
+                    Text(DateFormat('E').format(date), style: TextStyle(
+                      color: isSelected ? primaryColor : Colors.black54,
+                      fontWeight: FontWeight.bold,
+                    )),
+                    SizedBox(height: 2), // reduce spacing
+                    Text(date.day.toString(), style: TextStyle(
+                      color: isSelected ? primaryColor : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    )),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
